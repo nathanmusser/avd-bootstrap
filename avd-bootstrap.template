@@ -7,18 +7,28 @@
 
 # [ <-- needed because of Argbash
 
+# echoerr used for outputting any diagnostic info
 echoerr() { echo "$@" 1>&2; }
 
+# Use user supplied python path if provided, otherwise default to system python3
 if ! [ "$_arg_pythonpath" == "" ]; then
-    pythonpath="$_arg_pythonpath"
+    pythonpath=$_arg_pythonpath
 else
-    pythonpath=`which python3`
+    pythonpath=$(which python3)
 fi
 
+# 
 if [ "$pythonpath" == "" ]; then
     echoerr "Python not found: please use -p, --pythonpath to specify the path to a python interpreter"
 else
     echoerr "Found python at $pythonpath"
 fi
+
+python3_version=$($pythonpath --version 2>&1 | awk '{print $2}')
+echo "$python3_version"
+#if ! echo "$python3_version" | grep -qE '^3\.10|^3\.11|^3\.12' ; then
+#  echo -e "${RED}Fatal: Python 3.10 - 3.12 is not installed. Please install.${NC}"
+#  exit 1
+#fi
 
 # ] <-- needed because of Argbash
