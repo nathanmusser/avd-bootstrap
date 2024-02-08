@@ -80,6 +80,16 @@ parse_commandline "$@"
 # [ <-- needed because of Argbash
 
 
-echo "Value of --python: $_arg_pythonpath"
+if ! [ "$_arg_pythonpath" == "" ]; then
+    pythonpath="$_arg_pythonpath"
+else
+    pythonpath=`which python3`
+fi
+
+if [ "$pythonpath" == "" ]; then
+    echo "Python not found: please use -p, --pythonpath to specify the path to a python interpreter"
+else
+    echo "Using $pythonpath as the python interpreter"
+fi
 
 # ] <-- needed because of Argbash

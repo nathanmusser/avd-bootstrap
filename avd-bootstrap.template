@@ -7,6 +7,18 @@
 
 # [ <-- needed because of Argbash
 
-echo "Value of --python: $_arg_pythonpath"
+echoerr() { echo "$@" 1>&2; }
+
+if ! [ "$_arg_pythonpath" == "" ]; then
+    pythonpath="$_arg_pythonpath"
+else
+    pythonpath=`which python3`
+fi
+
+if [ "$pythonpath" == "" ]; then
+    echoerr "Python not found: please use -p, --pythonpath to specify the path to a python interpreter"
+else
+    echoerr "Found python at $pythonpath"
+fi
 
 # ] <-- needed because of Argbash
