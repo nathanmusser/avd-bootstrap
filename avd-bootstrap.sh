@@ -2,7 +2,7 @@
 #
 #
 # ARG_OPTIONAL_SINGLE([pythonpath],[p],[The path to the python interpreter])
-# ARG_OPTIONAL_SINGLE([pyver],[v],[The path to the python interpreter])
+# ARG_OPTIONAL_BOOLEAN([verbose],[v],[Print verbose output])
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
 # needed because of Argbash --> m4_ignore([
@@ -29,15 +29,15 @@ begins_with_short_option()
 
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_pythonpath=
-_arg_pyver=
+_arg_verbose="off"
 
 
 print_help()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-p|--pythonpath <arg>] [-v|--pyver <arg>] [-h|--help]\n' "$0"
+	printf 'Usage: %s [-p|--pythonpath <arg>] [-v|--(no-)verbose] [-h|--help]\n' "$0"
 	printf '\t%s\n' "-p, --pythonpath: The path to the python interpreter (no default)"
-	printf '\t%s\n' "-v, --pyver: The path to the python interpreter (no default)"
+	printf '\t%s\n' "-v, --verbose, --no-verbose: Print verbose output (off by default)"
 	printf '\t%s\n' "-h, --help: Prints help"
 }
 
@@ -59,16 +59,17 @@ parse_commandline()
 			-p*)
 				_arg_pythonpath="${_key##-p}"
 				;;
-			-v|--pyver)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_pyver="$2"
-				shift
-				;;
-			--pyver=*)
-				_arg_pyver="${_key##--pyver=}"
+			-v|--no-verbose|--verbose)
+				_arg_verbose="on"
+				test "${1:0:5}" = "--no-" && _arg_verbose="off"
 				;;
 			-v*)
-				_arg_pyver="${_key##-v}"
+				_arg_verbose="on"
+				_next="${_key##-v}"
+				if test -n "$_next" -a "$_next" != "$_key"
+				then
+					{ begins_with_short_option "$_next" && shift && set -- "-v" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+				fi
 				;;
 			-h|--help)
 				print_help
@@ -100,7 +101,7 @@ REC_PYTHON_VERSION=3.12
 # echodiag used for outputting any diagnostic info
 # echoerr used for outputting any errors
 # both output to stderr
-echodiag() { echo "$@" 1>&2; }
+echodiag() { if [ "$_arg_verbose" == "on" ]; then echo "$@" 1>&2; fi }
 echoerr() { echo "ERROR: $@" 1>&2; }
 
 # Use user supplied python path if provided, otherwise default to system python3
@@ -133,6 +134,12 @@ if ! [ "$python_version" == "" ] && \
     echodiag "..python version is compatible"
 else
     echoerr "Python version NOT compatible, requires $MIN_PYTHON_VERSION - $REC_PYTHON_VERSION, found version $python_version"
+    exit 1
+fi
+
+$python_path -m ensurepip --version &> /dev/null
+if ! [ $? -eq 0 ]; then
+    echoerr "Python missing package ensurepip"
     exit 1
 fi
 

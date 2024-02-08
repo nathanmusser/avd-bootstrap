@@ -2,7 +2,7 @@
 #
 #
 # ARG_OPTIONAL_SINGLE([pythonpath], [p], [The path to the python interpreter])
-# ARG_OPTIONAL_SINGLE([pyver], [v], [The path to the python interpreter])
+# ARG_OPTIONAL_BOOLEAN([verbose], [v], [Print verbose output])
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO
 
@@ -14,7 +14,7 @@ REC_PYTHON_VERSION=3.12
 # echodiag used for outputting any diagnostic info
 # echoerr used for outputting any errors
 # both output to stderr
-echodiag() { echo "$@" 1>&2; }
+echodiag() { if [ "$_arg_verbose" == "on" ]; then echo "$@" 1>&2; fi }
 echoerr() { echo "ERROR: $@" 1>&2; }
 
 # Use user supplied python path if provided, otherwise default to system python3
@@ -47,6 +47,13 @@ if ! [ "$python_version" == "" ] && \
     echodiag "..python version is compatible"
 else
     echoerr "Python version NOT compatible, requires $MIN_PYTHON_VERSION - $REC_PYTHON_VERSION, found version $python_version"
+    exit 1
+fi
+
+# Check if ensurepip is installed, required by venv
+$python_path -m ensurepip --version &> /dev/null
+if ! [ $? -eq 0 ]; then
+    echoerr "Python missing package ensurepip"
     exit 1
 fi
 
