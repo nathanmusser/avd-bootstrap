@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+#
+# ARG_OPTIONAL_SINGLE([pythonpath], [p], [The path to the python interpreter])
+# ARG_HELP([The general script's help msg])
+# ARGBASH_GO
+
+# [ <-- needed because of Argbash
+
+echo "Value of --python: $_arg_pythonpath"
+
+# ] <-- needed because of Argbash
