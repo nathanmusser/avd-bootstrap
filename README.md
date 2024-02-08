@@ -12,6 +12,7 @@ Download the [latest release](https://github.com/nathanmusser/avd-bootstrap/rele
 
 To actually install you need to add a `--install` flag or you can pipe the output of the dry-run into a shell: `.\avd-bootstrap.sh | sh`
 
+```
 ./avd-bootstrap.sh [--(no-)install] [-p|--pythonpath <arg>] [-d|--installdir <arg>] [-e|--venv <arg>] [--ansibleversion <arg>] [--avdversion <arg>] [--(no-)avdexamples] [--(no-)runavdexample] [-v|--(no-)verbose] [-h|--help]
         --install, --no-install: Install AVD, not specifying this will result in a dry run (off by default)
         -p, --pythonpath: The path to the python interpreter instead of the system python (no default)
@@ -23,6 +24,7 @@ To actually install you need to add a `--install` flag or you can pipe the outpu
         --runavdexample, --no-runavdexample: Run AVD example after installing, requires --avdexamples (off by default)  
         -v, --verbose, --no-verbose: Print verbose output (off by default)
         -h, --help: Prints help
+```
 
 
 ## Contributing
