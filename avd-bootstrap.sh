@@ -1,7 +1,14 @@
 #!/bin/bash
 #
 #
-# ARG_OPTIONAL_SINGLE([pythonpath],[p],[The path to the python interpreter])
+# ARG_OPTIONAL_BOOLEAN([install],[],[Install AVD, not specifying this will result in a dry run])
+# ARG_OPTIONAL_SINGLE([pythonpath],[p],[The path to the python interpreter instead of the system python])
+# ARG_OPTIONAL_SINGLE([installdir],[d],[The path to install avd into],[./avd])
+# ARG_OPTIONAL_SINGLE([venv],[e],[The venv name to use],[venv_avd])
+# ARG_OPTIONAL_SINGLE([ansibleversion],[],[The ansible version to install, be careful changing this],[2.16.3])
+# ARG_OPTIONAL_SINGLE([avdversion],[],[The avd version to install, be careful changing this],[4.5.0])
+# ARG_OPTIONAL_BOOLEAN([avdexamples],[],[Copy AVD examples into the installdir])
+# ARG_OPTIONAL_BOOLEAN([runavdexample],[],[Run AVD example after installing, requires --avdexamples])
 # ARG_OPTIONAL_BOOLEAN([verbose],[v],[Print verbose output])
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
@@ -22,21 +29,35 @@ die()
 
 begins_with_short_option()
 {
-	local first_option all_short_options='pvh'
+	local first_option all_short_options='pdevh'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
 
 # THE DEFAULTS INITIALIZATION - OPTIONALS
+_arg_install="off"
 _arg_pythonpath=
+_arg_installdir="./avd"
+_arg_venv="venv_avd"
+_arg_ansibleversion="2.16.3"
+_arg_avdversion="4.5.0"
+_arg_avdexamples="off"
+_arg_runavdexample="off"
 _arg_verbose="off"
 
 
 print_help()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-p|--pythonpath <arg>] [-v|--(no-)verbose] [-h|--help]\n' "$0"
-	printf '\t%s\n' "-p, --pythonpath: The path to the python interpreter (no default)"
+	printf 'Usage: %s [--(no-)install] [-p|--pythonpath <arg>] [-d|--installdir <arg>] [-e|--venv <arg>] [--ansibleversion <arg>] [--avdversion <arg>] [--(no-)avdexamples] [--(no-)runavdexample] [-v|--(no-)verbose] [-h|--help]\n' "$0"
+	printf '\t%s\n' "--install, --no-install: Install AVD, not specifying this will result in a dry run (off by default)"
+	printf '\t%s\n' "-p, --pythonpath: The path to the python interpreter instead of the system python (no default)"
+	printf '\t%s\n' "-d, --installdir: The path to install avd into (default: './avd')"
+	printf '\t%s\n' "-e, --venv: The venv name to use (default: 'venv_avd')"
+	printf '\t%s\n' "--ansibleversion: The ansible version to install, be careful changing this (default: '2.16.3')"
+	printf '\t%s\n' "--avdversion: The avd version to install, be careful changing this (default: '4.5.0')"
+	printf '\t%s\n' "--avdexamples, --no-avdexamples: Copy AVD examples into the installdir (off by default)"
+	printf '\t%s\n' "--runavdexample, --no-runavdexample: Run AVD example after installing, requires --avdexamples (off by default)"
 	printf '\t%s\n' "-v, --verbose, --no-verbose: Print verbose output (off by default)"
 	printf '\t%s\n' "-h, --help: Prints help"
 }
@@ -48,6 +69,10 @@ parse_commandline()
 	do
 		_key="$1"
 		case "$_key" in
+			--no-install|--install)
+				_arg_install="on"
+				test "${1:0:5}" = "--no-" && _arg_install="off"
+				;;
 			-p|--pythonpath)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_pythonpath="$2"
@@ -58,6 +83,52 @@ parse_commandline()
 				;;
 			-p*)
 				_arg_pythonpath="${_key##-p}"
+				;;
+			-d|--installdir)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_installdir="$2"
+				shift
+				;;
+			--installdir=*)
+				_arg_installdir="${_key##--installdir=}"
+				;;
+			-d*)
+				_arg_installdir="${_key##-d}"
+				;;
+			-e|--venv)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_venv="$2"
+				shift
+				;;
+			--venv=*)
+				_arg_venv="${_key##--venv=}"
+				;;
+			-e*)
+				_arg_venv="${_key##-e}"
+				;;
+			--ansibleversion)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_ansibleversion="$2"
+				shift
+				;;
+			--ansibleversion=*)
+				_arg_ansibleversion="${_key##--ansibleversion=}"
+				;;
+			--avdversion)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_avdversion="$2"
+				shift
+				;;
+			--avdversion=*)
+				_arg_avdversion="${_key##--avdversion=}"
+				;;
+			--no-avdexamples|--avdexamples)
+				_arg_avdexamples="on"
+				test "${1:0:5}" = "--no-" && _arg_avdexamples="off"
+				;;
+			--no-runavdexample|--runavdexample)
+				_arg_runavdexample="on"
+				test "${1:0:5}" = "--no-" && _arg_runavdexample="off"
 				;;
 			-v|--no-verbose|--verbose)
 				_arg_verbose="on"
@@ -95,12 +166,20 @@ parse_commandline "$@"
 # [ <-- needed because of Argbash
 
 
-MIN_PYTHON_VERSION=3.10
-REC_PYTHON_VERSION=3.12
 
+# Python 3.10-3.12 required for ansible-core 2.16
+# See here: https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
+MIN_PYTHON_VERSION="3.10"
+REC_PYTHON_VERSION="3.12"
+
+EXAMPLES_DIR="examples"
+EXAMPLE_TO_RUN="single-dc-l3ls"
+
+# echomsg used for outputting messages to the user
 # echodiag used for outputting any diagnostic info
 # echoerr used for outputting any errors
-# both output to stderr
+#   all 3 output to stderr
+echomsg() { echo "$@" 1>&2; }
 echodiag() { if [ "$_arg_verbose" == "on" ]; then echo "$@" 1>&2; fi }
 echoerr() { echo "ERROR: $@" 1>&2; }
 
@@ -111,7 +190,8 @@ else
     python_path=$(which python3)
 fi
 
-#
+# Check if we found a python path, if the path is not valid the version check will fail so no need to check
+# (maybe we should check but...)
 if [ "$python_path" == "" ]; then
     echoerr "Python not found - please use -p, --pythonpath to specify the path to a compatible python interpreter [ $MIN_PYTHON_VERSION - $REC_PYTHON_VERSION ] "
     exit 1
@@ -137,10 +217,77 @@ else
     exit 1
 fi
 
+# Check if ensurepip is installed, required by venv
 $python_path -m ensurepip --version &> /dev/null
 if ! [ $? -eq 0 ]; then
     echoerr "Python missing package ensurepip"
     exit 1
+fi
+
+# Check if install path already exists
+if [ -d $_arg_installdir ]; then
+  echoerr "Install directory $_arg_installdir already exists. Please delete the directory or specify a different install path"
+  exit 1
+fi
+
+# If runavdexamples is set but not avdexamples error
+if [ $_arg_runavdexample == "on" ] && [ $_arg_avdexamples == "off" ]; then
+    echoerr "--runavdexample requires --avdexamples"
+    exit 1
+fi
+
+# Output config info for dryrun
+if [ $_arg_install == "off" ]; then
+    echomsg "Config options:"
+    echomsg "  Python path: $python_path"
+    echomsg "  Python version: $python_version"
+    echomsg "  Install Directory: $_arg_installdir"
+    echomsg "  venv name: $_arg_venv"
+    echomsg "  Ansible version to be installed: $_arg_ansibleversion"
+    echomsg "  AVD version to be installed: $_arg_avdversion"
+    echomsg "  Install AVD Examples: $_arg_avdexamples"
+    echomsg "  Run AVD Example: $_arg_runavdexample"
+    echomsg "To install AVD using these facts rerun the same command with the --install flag or use the following command:"
+    if [ $_arg_avdexamples == "off" ]; then
+        echo "  $0 -p $python_path -d $_arg_installdir -e $_arg_venv --ansibleversion $_arg_ansibleversion --avdversion $_arg_avdversion --install"
+    else
+        if [ $_arg_runavdexample == "off" ]; then
+            echo "  $0 -p $python_path -d $_arg_installdir -e $_arg_venv --ansibleversion $_arg_ansibleversion --avdversion $_arg_avdversion --avdexamples  --install"
+        else
+            echo "  $0 -p $python_path -d $_arg_installdir -e $_arg_venv --ansibleversion $_arg_ansibleversion --avdversion $_arg_avdversion --avdexamples  --runavdexample --install"
+        fi
+    fi
+    exit 0
+fi
+
+# Create and move into installdir
+mkdir $_arg_installdir
+cd $_arg_installdir
+
+# Create an activate venv
+$python_path -m venv $_arg_venv
+source $_arg_venv/bin/activate
+
+# Install ansible-core
+python3 -m pip install ansible-core==$_arg_ansibleversion
+
+# Install arista.avd ansible collection - we install it into the venv bin as a hack around ansible collection pathing
+ansible-galaxy collection install arista.avd:==$_arg_avdversion -p $_arg_venv/bin
+
+# Install AVD depenedencies
+ARISTA_AVD_DIR=$(ansible-galaxy collection list arista.avd --format yaml | head -1 | cut -d: -f1)
+python3 -m pip install -r $ARISTA_AVD_DIR/arista/avd/requirements.txt
+
+# Install AVD Examples
+if [ $_arg_avdexamples == "on" ]; then
+    mkdir -p $EXAMPLES_DIR
+    cd $EXAMPLES_DIR
+    ansible-playbook arista.avd.install_examples
+    # Run AVD Example
+    if [ $_arg_runavdexample == "on" ]; then
+        cd $EXAMPLE_TO_RUN
+        ansible-playbook build.yml
+    fi
 fi
 
 # ] <-- needed because of Argbash
