@@ -1,4 +1,5 @@
 #!/bin/bash
+# avd-bootstrap v1.0
 #
 #
 # ARG_OPTIONAL_BOOLEAN([install],, [Install AVD, not specifying this will result in a dry run])
@@ -10,7 +11,7 @@
 # ARG_OPTIONAL_BOOLEAN([avdexamples],, [Copy AVD examples into the installdir])
 # ARG_OPTIONAL_BOOLEAN([runavdexample],, [Run AVD example after installing, requires --avdexamples])
 # ARG_OPTIONAL_BOOLEAN([verbose], [v], [Print verbose output])
-# ARG_HELP([The general script's help msg])
+# ARG_HELP([A script to bootstrap the installation of Arista AVD into a venv on most *nix systems])
 # ARGBASH_GO
 
 # [ <-- needed because of Argbash
