@@ -2,6 +2,7 @@
 #
 #
 # ARG_OPTIONAL_SINGLE([pythonpath],[p],[The path to the python interpreter])
+# ARG_OPTIONAL_SINGLE([pyver],[v],[The path to the python interpreter])
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
 # needed because of Argbash --> m4_ignore([
@@ -21,20 +22,22 @@ die()
 
 begins_with_short_option()
 {
-	local first_option all_short_options='ph'
+	local first_option all_short_options='pvh'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
 
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_pythonpath=
+_arg_pyver=
 
 
 print_help()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-p|--pythonpath <arg>] [-h|--help]\n' "$0"
+	printf 'Usage: %s [-p|--pythonpath <arg>] [-v|--pyver <arg>] [-h|--help]\n' "$0"
 	printf '\t%s\n' "-p, --pythonpath: The path to the python interpreter (no default)"
+	printf '\t%s\n' "-v, --pyver: The path to the python interpreter (no default)"
 	printf '\t%s\n' "-h, --help: Prints help"
 }
 
@@ -55,6 +58,17 @@ parse_commandline()
 				;;
 			-p*)
 				_arg_pythonpath="${_key##-p}"
+				;;
+			-v|--pyver)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_pyver="$2"
+				shift
+				;;
+			--pyver=*)
+				_arg_pyver="${_key##--pyver=}"
+				;;
+			-v*)
+				_arg_pyver="${_key##-v}"
 				;;
 			-h|--help)
 				print_help
@@ -80,28 +94,46 @@ parse_commandline "$@"
 # [ <-- needed because of Argbash
 
 
-# echoerr used for outputting any diagnostic info
-echoerr() { echo "$@" 1>&2; }
+MIN_PYTHON_VERSION=3.10
+REC_PYTHON_VERSION=3.12
+
+# echodiag used for outputting any diagnostic info
+# echoerr used for outputting any errors
+# both output to stderr
+echodiag() { echo "$@" 1>&2; }
+echoerr() { echo "ERROR: $@" 1>&2; }
 
 # Use user supplied python path if provided, otherwise default to system python3
 if ! [ "$_arg_pythonpath" == "" ]; then
-    pythonpath="$_arg_pythonpath"
+    python_path=$_arg_pythonpath
 else
-    pythonpath=$(which python3)
+    python_path=$(which python3)
 fi
 
 #
-if [ "$pythonpath" == "" ]; then
-    echoerr "Python not found: please use -p, --pythonpath to specify the path to a python interpreter"
+if [ "$python_path" == "" ]; then
+    echoerr "Python not found - please use -p, --pythonpath to specify the path to a compatible python interpreter [ $MIN_PYTHON_VERSION - $REC_PYTHON_VERSION ] "
+    exit 1
 else
-    echoerr "Found python at $pythonpath"
+    echodiag "Found python at $python_path"
 fi
 
-python3_version=$($pythonpath --version 2>&1 | awk '{print $2}')
-echo ${python3_version}
-#if ! echo "$python3_version" | grep -qE '^3\.10|^3\.11|^3\.12' ; then
-#  echo -e "${RED}Fatal: Python 3.10 - 3.12 is not installed. Please install.${NC}"
-#  exit 1
-#fi
+# Check Python version is compatible
+python_version=$($python_path --version 2>&1 | awk '{print $2}')
+python_version_major=$(echo "$python_version" | cut -d. -f1)
+python_version_minor=$(echo "$python_version" | cut -d. -f2)
+min_python_version_major=$(echo "$MIN_PYTHON_VERSION" | cut -d. -f1)
+min_python_version_minor=$(echo "$MIN_PYTHON_VERSION" | cut -d. -f2)
+max_python_version_major=$(echo "$REC_PYTHON_VERSION" | cut -d. -f1)
+max_python_version_minor=$(echo "$REC_PYTHON_VERSION" | cut -d. -f2)
+
+if ! [ "$python_version" == "" ] && \
+   (( python_version_major > min_python_version_major || ( python_version_major == min_python_version_major && python_version_minor >= min_python_version_minor ) )) && \
+   (( python_version_major < max_python_version_major || ( python_version_major == max_python_version_major && python_version_minor <= max_python_version_minor ) )); then
+    echodiag "..python version is compatible"
+else
+    echoerr "Python version NOT compatible, requires $MIN_PYTHON_VERSION - $REC_PYTHON_VERSION, found version $python_version"
+    exit 1
+fi
 
 # ] <-- needed because of Argbash
