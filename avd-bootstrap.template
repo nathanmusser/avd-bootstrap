@@ -67,11 +67,24 @@ else
     exit 1
 fi
 
-# Check if ensurepip is installed, required by venv
+# Make sure we can use venv
+# First Check if ensurepip is installed, required by venv
+# If ensurepip is not there check if we can still create a venv anyways (useful for ubuntu/debian weirdness)
+# These checks would not catch the edge case where ensurepip IS installed but venv is not - maybe we should just test venv and forget about ensurepip
 $python_path -m ensurepip --version &> /dev/null
 if ! [ $? -eq 0 ]; then
-    echoerr "Python missing package ensurepip"
-    exit 1
+    currdir="$(pwd)"
+    cd /tmp
+    test_venv_name="_$$.tmp"
+    $python_path -m venv "$test_venv_name"
+    if [ $? == 1 ]; then
+        echoerr "Cannot create a venv. Package ensurepip is not usable and cannot create a venv."
+        echodiag "On Debian/Ubuntu systems you might need to install the pythonXX-venv package or use a non system interpreter"
+        rm -r "$test_venv_name"
+        exit 1
+    fi
+    rm -r "$test_venv_name"
+    cd "$currdir"
 fi
 
 # Check if install path already exists
@@ -139,5 +152,8 @@ if [ $_arg_avdexamples == "on" ]; then
         ansible-playbook build.yml
     fi
 fi
+
+echomsg "Install complete, to use AVD run the following:"
+echomsg "\n  cd $_arg_installdir; source $_arg_venv/bin/activate\n"
 
 # ] <-- needed because of Argbash
