@@ -1,5 +1,5 @@
 #!/bin/bash
-# avd-bootstrap v1.0
+# avd-bootstrap v1.0.1
 #
 #
 # ARG_OPTIONAL_BOOLEAN([install],, [Install AVD, not specifying this will result in a dry run])
