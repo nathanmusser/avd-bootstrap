@@ -1,5 +1,5 @@
 #!/bin/bash
-# avd-bootstrap v1.0.2
+# avd-bootstrap v1.0.3-dev
 #
 #
 # ARG_OPTIONAL_BOOLEAN([install],, [Install AVD, not specifying this will result in a dry run])
@@ -7,7 +7,7 @@
 # ARG_OPTIONAL_SINGLE([installdir], [d], [The path to install avd into], [./avd])
 # ARG_OPTIONAL_SINGLE([venv], [e], [The venv name to use], [venv_avd])
 # ARG_OPTIONAL_SINGLE([ansibleversion], , [The ansible version to install, be careful changing this], [2.16.5])
-# ARG_OPTIONAL_SINGLE([avdversion], , [The avd version to install, be careful changing this], [4.6.0])
+# ARG_OPTIONAL_SINGLE([avdversion], , [The avd version to install, be careful changing this], [4.7.0-dev2])
 # ARG_OPTIONAL_BOOLEAN([avdexamples],, [Copy AVD examples into the installdir])
 # ARG_OPTIONAL_BOOLEAN([runavdexample],, [Run AVD example after installing, requires --avdexamples])
 # ARG_OPTIONAL_BOOLEAN([verbose], [v], [Print verbose output])

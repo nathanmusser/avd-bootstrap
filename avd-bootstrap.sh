@@ -7,7 +7,7 @@
 # ARG_OPTIONAL_SINGLE([installdir],[d],[The path to install avd into],[./avd])
 # ARG_OPTIONAL_SINGLE([venv],[e],[The venv name to use],[venv_avd])
 # ARG_OPTIONAL_SINGLE([ansibleversion],[],[The ansible version to install, be careful changing this],[2.16.5])
-# ARG_OPTIONAL_SINGLE([avdversion],[],[The avd version to install, be careful changing this],[4.6.0])
+# ARG_OPTIONAL_SINGLE([avdversion],[],[The avd version to install, be careful changing this],[4.7.0-dev2])
 # ARG_OPTIONAL_BOOLEAN([avdexamples],[],[Copy AVD examples into the installdir])
 # ARG_OPTIONAL_BOOLEAN([runavdexample],[],[Run AVD example after installing, requires --avdexamples])
 # ARG_OPTIONAL_BOOLEAN([verbose],[v],[Print verbose output])
@@ -41,7 +41,7 @@ _arg_pythonpath=
 _arg_installdir="./avd"
 _arg_venv="venv_avd"
 _arg_ansibleversion="2.16.5"
-_arg_avdversion="4.6.0"
+_arg_avdversion="4.7.0-dev2"
 _arg_avdexamples="off"
 _arg_runavdexample="off"
 _arg_verbose="off"
@@ -56,7 +56,7 @@ print_help()
 	printf '\t%s\n' "-d, --installdir: The path to install avd into (default: './avd')"
 	printf '\t%s\n' "-e, --venv: The venv name to use (default: 'venv_avd')"
 	printf '\t%s\n' "--ansibleversion: The ansible version to install, be careful changing this (default: '2.16.5')"
-	printf '\t%s\n' "--avdversion: The avd version to install, be careful changing this (default: '4.6.0')"
+	printf '\t%s\n' "--avdversion: The avd version to install, be careful changing this (default: '4.7.0-dev2')"
 	printf '\t%s\n' "--avdexamples, --no-avdexamples: Copy AVD examples into the installdir (off by default)"
 	printf '\t%s\n' "--runavdexample, --no-runavdexample: Run AVD example after installing, requires --avdexamples (off by default)"
 	printf '\t%s\n' "-v, --verbose, --no-verbose: Print verbose output (off by default)"
