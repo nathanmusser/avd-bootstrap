@@ -305,6 +305,8 @@ if [ $_arg_avdexamples == "on" ]; then
 fi
 
 echomsg "Install complete, to use AVD run the following:"
-echomsg "\n  cd $_arg_installdir; source $_arg_venv/bin/activate\n"
+echomsg "  cd $_arg_installdir;"
+echomsg "  source $_arg_venv/bin/activate"
+echomsg " "
 
 # ] <-- needed because of Argbash
